@@ -1,4 +1,4 @@
-const CORS_PROXY = "https://corsproxy.io/?";
+const CORS_PROXY = "https://proxy.techzbots1.workers.dev/?u=";
 
 async function getCoverUrl(mangaId) {
     try {
