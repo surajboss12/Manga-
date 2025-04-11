@@ -1,13 +1,11 @@
 const CORS_PROXY = "https://proxy.techzbots1.workers.dev/?u=";
 
-function preloadImage(url) {
+async function preloadImage(url) {
     return new Promise((resolve) => {
         const img = new Image();
-        img.onload = resolve;
-        img.onerror = resolve;
+        img.onload = () => resolve(url);
+        img.onerror = () => resolve('');
         img.src = url;
-        img.style.display = "none";
-        document.body.appendChild(img);
     });
 }
 
@@ -16,14 +14,11 @@ async function getCoverUrl(mangaId) {
         const res = await fetch(CORS_PROXY + encodeURIComponent(`https://api.mangadex.org/cover?limit=1&manga[]=${mangaId}`));
         const data = await res.json();
         const fileName = data?.data?.[0]?.attributes?.fileName;
-        if (!fileName) return '';
-
-        const directUrl = `https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg`;
-        const proxiedUrl = CORS_PROXY + encodeURIComponent(directUrl);
-
-        // Preload the image
-        await preloadImage(proxiedUrl);
-        return proxiedUrl;
+        if (fileName) {
+            const imageUrl = `https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg`;
+            return await preloadImage(imageUrl);
+        }
+        return '';
     } catch (err) {
         console.error(`Error getting cover for ${mangaId}`, err);
         return '';
