@@ -3,7 +3,11 @@ const CORS_PROXY = "https://proxy.techzbots1.workers.dev/?u=";
 function getCoverFromRelationships(manga) {
     const coverRel = manga.relationships.find(rel => rel.type === "cover_art");
     const fileName = coverRel?.attributes?.fileName;
-    return fileName ? `https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg` : '';
+    if (!fileName) return '';
+    
+    // Load image through proxy to avoid Mangadex hotlinking block
+    const originalUrl = `https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg`;
+    return `${CORS_PROXY}${encodeURIComponent(originalUrl)}`;
 }
 
 function createMangaCard(title, imageUrl, mangaId) {
