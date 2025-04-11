@@ -18,7 +18,7 @@ function createMangaCard(title, imageUrl, mangaId) {
     return `
         <div class="manga-card">
             <a href="https://mangadex.org/title/${mangaId}" target="_blank">
-                <img src="${imageUrl}" alt="${title}" />
+                <img src="${imageUrl}" alt="${title}" loading="lazy" />
                 <p>${title}</p>
             </a>
         </div>
