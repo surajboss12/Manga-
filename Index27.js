@@ -1,13 +1,14 @@
-const API_PROXY = "https://proxy.techzbots1.workers.dev/?u=";
+const CORS_PROXY = "https://proxy.techzbots1.workers.dev/?u=";
 const IMAGE_PROXY = "https://truyen0hay.site/proxy-0hay?url=";
 
 async function getCoverUrl(mangaId) {
     try {
-        const res = await fetch(API_PROXY + encodeURIComponent(`https://api.mangadex.org/cover?limit=1&manga[]=${mangaId}`));
+        const res = await fetch(CORS_PROXY + encodeURIComponent(`https://api.mangadex.org/cover?limit=1&manga[]=${mangaId}`));
         const data = await res.json();
         const fileName = data?.data?.[0]?.attributes?.fileName;
-        const imageUrl = fileName ? `https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg` : '';
-        return IMAGE_PROXY + encodeURIComponent(imageUrl);
+        return fileName
+            ? `${IMAGE_PROXY}https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg`
+            : '';
     } catch (err) {
         console.error(`Error getting cover for ${mangaId}`, err);
         return '';
@@ -17,7 +18,7 @@ async function getCoverUrl(mangaId) {
 function createMangaCard(title, imageUrl, mangaId) {
     return `
         <div class="manga-card">
-            <a href="https://mangadex.org/title/${mangaId}" target="_blank">
+            <a href="/p/title.html?id=${mangaId}">
                 <img src="${imageUrl}" alt="${title}" loading="lazy" />
                 <p>${title}</p>
             </a>
@@ -27,7 +28,7 @@ function createMangaCard(title, imageUrl, mangaId) {
 
 async function fetchTrending() {
     try {
-        const url = API_PROXY + encodeURIComponent("https://api.mangadex.org/manga?limit=10&availableTranslatedLanguage[]=en&order[followedCount]=desc&order[updatedAt]=desc");
+        const url = CORS_PROXY + encodeURIComponent("https://api.mangadex.org/manga?limit=10&availableTranslatedLanguage[]=en&order[followedCount]=desc&order[updatedAt]=desc");
         const res = await fetch(url);
         const data = await res.json();
 
@@ -50,7 +51,7 @@ async function fetchTrending() {
 
 async function fetchRecent() {
     try {
-        const url = API_PROXY + encodeURIComponent("https://api.mangadex.org/chapter?limit=15&translatedLanguage[]=en&order[publishAt]=desc");
+        const url = CORS_PROXY + encodeURIComponent("https://api.mangadex.org/chapter?limit=15&translatedLanguage[]=en&order[publishAt]=desc");
         const chapterRes = await fetch(url);
         const chapterData = await chapterRes.json();
 
@@ -68,7 +69,7 @@ async function fetchRecent() {
             return;
         }
 
-        const mangaUrl = API_PROXY + encodeURIComponent(`https://api.mangadex.org/manga?limit=15&ids[]=${mangaIds.join("&ids[]=")}`);
+        const mangaUrl = CORS_PROXY + encodeURIComponent(`https://api.mangadex.org/manga?limit=15&ids[]=${mangaIds.join("&ids[]=")}`);
         const mangaRes = await fetch(mangaUrl);
         const mangaData = await mangaRes.json();
 
