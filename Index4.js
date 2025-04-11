@@ -1,19 +1,15 @@
-// index.js
+// CORS Proxy Prefix (temporary fix)
+const CORS_PROXY = "https://corsproxy.io/?";
 
-// Helper function to fetch cover image URL for a given manga ID
+// Helper: Get manga cover image
 async function getCoverUrl(mangaId) {
-    try {
-        const res = await fetch(`https://api.mangadex.org/cover?limit=1&manga[]=${mangaId}`);
-        const data = await res.json();
-        const fileName = data.data[0]?.attributes?.fileName;
-        return fileName ? `https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg` : '';
-    } catch (error) {
-        console.error(`Error fetching cover for manga ID ${mangaId}:`, error);
-        return '';
-    }
+    const res = await fetch(CORS_PROXY + encodeURIComponent(`https://api.mangadex.org/cover?limit=1&manga[]=${mangaId}`));
+    const data = await res.json();
+    const fileName = data.data[0]?.attributes?.fileName;
+    return fileName ? `https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg` : '';
 }
 
-// Function to create HTML for a manga card
+// Create manga card HTML
 function createMangaCard(title, imageUrl, mangaId) {
     return `
         <div class="manga-card">
@@ -25,10 +21,11 @@ function createMangaCard(title, imageUrl, mangaId) {
     `;
 }
 
-// Function to fetch and display "Trending Now" manga
+// Trending Now
 async function fetchTrending() {
     try {
-        const res = await fetch("https://api.mangadex.org/manga?limit=10&availableTranslatedLanguage[]=en&order[followedCount]=desc&order[updatedAt]=desc");
+        const url = CORS_PROXY + encodeURIComponent(`https://api.mangadex.org/manga?limit=10&availableTranslatedLanguage[]=en&order[followedCount]=desc&order[updatedAt]=desc`);
+        const res = await fetch(url);
         const data = await res.json();
 
         const cards = await Promise.all(data.data.map(async (manga) => {
@@ -38,22 +35,24 @@ async function fetchTrending() {
         }));
 
         document.querySelector('.popularg').innerHTML = cards.join('');
-    } catch (error) {
-        console.error('Error fetching trending manga:', error);
+    } catch (err) {
+        console.error("Error fetching trending manga:", err);
     }
 }
 
-// Function to fetch and display "Recent Releases"
+// Recent Releases
 async function fetchRecent() {
     try {
-        const chapterRes = await fetch("https://api.mangadex.org/chapter?limit=15&translatedLanguage[]=en&order[publishAt]=desc");
+        const url = CORS_PROXY + encodeURIComponent(`https://api.mangadex.org/chapter?limit=15&translatedLanguage[]=en&order[publishAt]=desc`);
+        const chapterRes = await fetch(url);
         const chapterData = await chapterRes.json();
 
         const mangaIds = [...new Set(
             chapterData.data.map(ch => ch.relationships.find(r => r.type === "manga")?.id).filter(Boolean)
         )];
 
-        const mangaRes = await fetch(`https://api.mangadex.org/manga?limit=15&ids[]=${mangaIds.join("&ids[]=")}`);
+        const mangaUrl = CORS_PROXY + encodeURIComponent(`https://api.mangadex.org/manga?limit=15&ids[]=${mangaIds.join("&ids[]=")}`);
+        const mangaRes = await fetch(mangaUrl);
         const mangaData = await mangaRes.json();
 
         const cards = await Promise.all(mangaData.data.map(async (manga) => {
@@ -63,12 +62,12 @@ async function fetchRecent() {
         }));
 
         document.querySelector('.recento').innerHTML = cards.join('');
-    } catch (error) {
-        console.error('Error fetching recent releases:', error);
+    } catch (err) {
+        console.error("Error fetching recent manga:", err);
     }
 }
 
-// Initialize functions on page load
+// Run on page load
 document.addEventListener("DOMContentLoaded", () => {
     fetchTrending();
     fetchRecent();
