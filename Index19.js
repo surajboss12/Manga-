@@ -5,9 +5,8 @@ async function getCoverUrl(mangaId) {
         const res = await fetch(CORS_PROXY + encodeURIComponent(`https://api.mangadex.org/cover?limit=1&manga[]=${mangaId}`));
         const data = await res.json();
         const fileName = data?.data?.[0]?.attributes?.fileName;
-        return fileName
-            ? CORS_PROXY + encodeURIComponent(`https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg`)
-            : '';
+        const directUrl = `https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg`;
+        return CORS_PROXY + encodeURIComponent(directUrl); // Proxy the image too
     } catch (err) {
         console.error(`Error getting cover for ${mangaId}`, err);
         return '';
@@ -18,7 +17,7 @@ function createMangaCard(title, imageUrl, mangaId) {
     return `
         <div class="manga-card">
             <a href="https://mangadex.org/title/${mangaId}" target="_blank">
-                <img src="${imageUrl}" alt="${title}" loading="lazy" />
+                <img src="${imageUrl}" alt="${title}" />
                 <p>${title}</p>
             </a>
         </div>
