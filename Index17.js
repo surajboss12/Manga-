@@ -1,13 +1,11 @@
 const CORS_PROXY = "https://proxy.techzbots1.workers.dev/?u=";
 
-function getCoverFromRelationships(manga) {
-    const coverRel = manga.relationships.find(rel => rel.type === "cover_art");
-    const fileName = coverRel?.attributes?.fileName;
-    if (!fileName) return '';
-    
-    // Load image through proxy to avoid Mangadex hotlinking block
-    const originalUrl = `https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg`;
-    return `${CORS_PROXY}${encodeURIComponent(originalUrl)}`;
+function getCoverImageUrl(manga) {
+    const coverArt = manga.relationships.find(rel => rel.type === "cover_art");
+    const fileName = coverArt?.attributes?.fileName;
+    return fileName
+        ? `${CORS_PROXY}${encodeURIComponent(`https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg`)}`
+        : "";
 }
 
 function createMangaCard(title, imageUrl, mangaId) {
@@ -27,14 +25,14 @@ async function fetchTrending() {
         const res = await fetch(url);
         const data = await res.json();
 
-        if (!data?.data || !Array.isArray(data.data)) {
-            console.error("Trending data is missing or invalid", data);
+        if (!data?.data) {
+            console.error("Invalid response from MangaDex:", data);
             return;
         }
 
         const cards = data.data.map((manga) => {
             const title = manga.attributes.title.en || "Untitled";
-            const imageUrl = getCoverFromRelationships(manga);
+            const imageUrl = getCoverImageUrl(manga);
             return createMangaCard(title, imageUrl, manga.id);
         });
 
@@ -46,36 +44,27 @@ async function fetchTrending() {
 
 async function fetchRecent() {
     try {
-        const url = CORS_PROXY + encodeURIComponent("https://api.mangadex.org/chapter?limit=15&translatedLanguage[]=en&order[publishAt]=desc");
-        const chapterRes = await fetch(url);
+        const chapterUrl = CORS_PROXY + encodeURIComponent("https://api.mangadex.org/chapter?limit=15&translatedLanguage[]=en&order[publishAt]=desc");
+        const chapterRes = await fetch(chapterUrl);
         const chapterData = await chapterRes.json();
 
-        if (!chapterData?.data || !Array.isArray(chapterData.data)) {
-            console.error("Recent chapter data is missing or invalid", chapterData);
-            return;
-        }
+        const mangaIds = [
+            ...new Set(
+                chapterData.data
+                    .map(ch => ch.relationships.find(rel => rel.type === "manga")?.id)
+                    .filter(Boolean)
+            )
+        ];
 
-        const mangaIds = [...new Set(
-            chapterData.data.map(ch => ch.relationships.find(r => r.type === "manga")?.id).filter(Boolean)
-        )];
+        if (!mangaIds.length) return;
 
-        if (!mangaIds.length) {
-            console.error("No manga IDs found from recent chapters");
-            return;
-        }
-
-        const mangaUrl = CORS_PROXY + encodeURIComponent(`https://api.mangadex.org/manga?limit=15&includes[]=cover_art&ids[]=${mangaIds.join("&ids[]=")}`);
+        const mangaUrl = CORS_PROXY + encodeURIComponent(`https://api.mangadex.org/manga?includes[]=cover_art&ids[]=${mangaIds.join("&ids[]=")}`);
         const mangaRes = await fetch(mangaUrl);
         const mangaData = await mangaRes.json();
 
-        if (!mangaData?.data || !Array.isArray(mangaData.data)) {
-            console.error("Manga data fetch failed", mangaData);
-            return;
-        }
-
         const cards = mangaData.data.map((manga) => {
             const title = manga.attributes.title.en || "Untitled";
-            const imageUrl = getCoverFromRelationships(manga);
+            const imageUrl = getCoverImageUrl(manga);
             return createMangaCard(title, imageUrl, manga.id);
         });
 
