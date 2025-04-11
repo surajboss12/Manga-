@@ -1,6 +1,18 @@
 const CORS_PROXY = "https://proxy.techzbots1.workers.dev/?u=";
 
-async function preloadImage(url) {
+async function getCoverUrl(mangaId) {
+    try {
+        const res = await fetch(CORS_PROXY + encodeURIComponent(`https://api.mangadex.org/cover?limit=1&manga[]=${mangaId}`));
+        const data = await res.json();
+        const fileName = data?.data?.[0]?.attributes?.fileName;
+        return fileName ? `https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg` : '';
+    } catch (err) {
+        console.error(`Error getting cover for ${mangaId}`, err);
+        return '';
+    }
+}
+
+function preloadImage(url) {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => resolve(url);
@@ -9,27 +21,12 @@ async function preloadImage(url) {
     });
 }
 
-async function getCoverUrl(mangaId) {
-    try {
-        const res = await fetch(CORS_PROXY + encodeURIComponent(`https://api.mangadex.org/cover?limit=1&manga[]=${mangaId}`));
-        const data = await res.json();
-        const fileName = data?.data?.[0]?.attributes?.fileName;
-        if (fileName) {
-            const imageUrl = `https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg`;
-            return await preloadImage(imageUrl);
-        }
-        return '';
-    } catch (err) {
-        console.error(`Error getting cover for ${mangaId}`, err);
-        return '';
-    }
-}
-
-function createMangaCard(title, imageUrl, mangaId) {
+async function createMangaCard(title, imageUrl, mangaId) {
+    const preloadedUrl = await preloadImage(imageUrl);
     return `
         <div class="manga-card">
             <a href="https://mangadex.org/title/${mangaId}" target="_blank">
-                <img src="${imageUrl}" alt="${title}" />
+                <img src="${preloadedUrl}" alt="${title}" />
                 <p>${title}</p>
             </a>
         </div>
@@ -50,7 +47,7 @@ async function fetchTrending() {
         const cards = await Promise.all(data.data.map(async (manga) => {
             const title = manga.attributes.title.en || "Untitled";
             const imageUrl = await getCoverUrl(manga.id);
-            return createMangaCard(title, imageUrl, manga.id);
+            return await createMangaCard(title, imageUrl, manga.id);
         }));
 
         document.querySelector('.popularg').innerHTML = cards.join('');
@@ -91,7 +88,7 @@ async function fetchRecent() {
         const cards = await Promise.all(mangaData.data.map(async (manga) => {
             const title = manga.attributes.title.en || "Untitled";
             const imageUrl = await getCoverUrl(manga.id);
-            return createMangaCard(title, imageUrl, manga.id);
+            return await createMangaCard(title, imageUrl, manga.id);
         }));
 
         document.querySelector('.recento').innerHTML = cards.join('');
